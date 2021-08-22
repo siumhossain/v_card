@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from . models import CrimeInfo, User,UserProfile,ChildRecord,MedicalInfo, VisaCenter
+from . models import CrimeInfo, User,UserProfile,ChildRecord,MedicalInfo, Visa
 
 
 
@@ -82,5 +82,5 @@ class MedicalSeralizersI(serializers.ModelSerializer):
         fields = ['appoinment_time','weight','bp','oxyzen_level','suger_level','major_disease','recent_operation','briefly_describe']
 class VisaSeralizers(serializers.ModelSerializer):
     class Meta:
-        model = VisaCenter
+        model = Visa
         fields = ['approved','description']

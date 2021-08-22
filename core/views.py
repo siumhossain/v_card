@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from rest_framework.decorators import api_view,permission_classes
 from rest_framework.response import Response
-from .models import UserProfile,ChildRecord,CrimeInfo,MedicalInfo, VisaCenter
+from .models import UserProfile,ChildRecord,CrimeInfo,MedicalInfo, Visa
 
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
@@ -169,19 +169,22 @@ def update_medical_record(request,id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def visa_application(request,ssn):
-   try:
-      user = UserProfile.objects.get(ssn_number=ssn)
-   except UserProfile.DoesNotExist:
-      return Response({"error":"not found"})
-   red_alert = user.red_alert
-   print(red_alert)
-   if red_alert:
-      return Response({'alert':'this guy is criminal-call 999 Asap!!!'})
+   if not request.user.is_staff:
+      return Response({'message':'you aren\'t not allowed doing this stuff'})
    else:
-      visa_record = VisaCenter(ssn_number=user.ssn_number,user_id=user.id)
-      if request.method == 'POST':
-         serializer = VisaSeralizers(visa_record,data=request.data)
-         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data,status=status.HTTP_201_CREATED)
-         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+      try:
+         user = UserProfile.objects.get(ssn_number=ssn)
+      except UserProfile.DoesNotExist:
+         return Response({"error":"not found"})
+      red_alert = user.red_alert
+      
+      if red_alert:
+         return Response({'alert':'this guy is criminal-call 999 Asap!!!'})
+      else:
+         visa_record = Visa(ssn_number=user.ssn_number,user_id=user.id)
+         if request.method == 'POST':
+            serializer = VisaSeralizers(visa_record,data=request.data)
+            if serializer.is_valid():
+               serializer.save()
+               return Response(serializer.data,status=status.HTTP_201_CREATED)
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)

@@ -155,7 +155,7 @@ class UserProfile(models.Model):
 
 
 
-class VisaCenter(models.Model):
+class Visa(models.Model):
     user = models.ForeignKey(UserProfile,on_delete=models.CASCADE,default='')
     ssn_number = models.CharField(max_length=100,blank=True)
     approved = models.BooleanField(default=False)
@@ -163,4 +163,4 @@ class VisaCenter(models.Model):
     registration_date = models.DateTimeField(auto_now_add=True,null=True)
 
     def __str__(self):
-        return f'{self.user} | {self.ssn_number}'
+        return self.user
