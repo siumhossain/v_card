@@ -10,7 +10,10 @@ from .models import UserProfile,ChildRecord,CrimeInfo,MedicalInfo, Visa
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from core.serializers import MedicalSeralizersI, ProfileModifierSerializer, RegisterSerializer,UserProfileSerializer,CrimeSeralizersAll,CrimeSeralizersCreate,MedicalSeralizers, VisaSeralizers
+from django.contrib.auth.models import Group
+
 # Create your views here.
+
 
 
 
@@ -63,61 +66,83 @@ def user_profile(request,id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def crime_profile_all(request):
-   if request.method == 'GET':
-      crime_list = CrimeInfo.objects.all()
-      serializer = CrimeSeralizersAll(crime_list,many=True)
-      return Response(serializer.data)
+   group_check = request.user.groups.filter(name='police').exists()
+   if not request.user.is_staff or not group_check:
+      
+      data = {'message':'You aren\'t allowed'}
+      return Response(data,status=status.HTTP_403_FORBIDDEN)
+   else:
+      if request.method == 'GET':
+         crime_list = CrimeInfo.objects.all()
+         serializer = CrimeSeralizersAll(crime_list,many=True)
+         return Response(serializer.data)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_crime_profile_individual(request,ssn):
-   try:
-      crime_list = CrimeInfo.objects.filter(ssn_number__exact=ssn)
-   except CrimeInfo.DoesNotExist:
-      return Response({"error":"not found"})
+   group_check = request.user.groups.filter(name='police').exists()
+   if not request.user.is_staff or not group_check:
+      data = {'message':'You aren\'t allowed'}
+      return Response(data,status=status.HTTP_403_FORBIDDEN)
+   else:
+      try:
+         crime_list = CrimeInfo.objects.filter(ssn_number__exact=ssn)
+      except CrimeInfo.DoesNotExist:
+         return Response({"error":"not found"})
 
-   if request.method == 'GET':
-      
-      serializer = CrimeSeralizersAll(crime_list,many=True)
-      return Response(serializer.data)
+      if request.method == 'GET':
+         
+         serializer = CrimeSeralizersAll(crime_list,many=True)
+         return Response(serializer.data)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_crime_profile_individual(request,ssn):
-   try:
-      user = UserProfile.objects.get(ssn_number=ssn)
-   except UserProfile.DoesNotExist:
-      return Response({"error":"not found"})
-   crime_record = CrimeInfo(ssn_number=ssn,user_id=user.id)
-   if request.method == 'POST':
-      serializer = CrimeSeralizersCreate(crime_record,data=request.data)
-      if serializer.is_valid():
-         serializer.save()
-         return Response(serializer.data,status=status.HTTP_201_CREATED)
-      return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+   group_check = request.user.groups.filter(name='police').exists()
+   if not request.user.is_staff or not group_check:
+      data = {'message':'You aren\'t allowed'}
+      return Response(data,status=status.HTTP_403_FORBIDDEN)
+   else:
+
+      try:
+         user = UserProfile.objects.get(ssn_number=ssn)
+      except UserProfile.DoesNotExist:
+         return Response({"error":"not found"})
+      crime_record = CrimeInfo(ssn_number=ssn,user_id=user.id)
+      if request.method == 'POST':
+         serializer = CrimeSeralizersCreate(crime_record,data=request.data)
+         if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data,status=status.HTTP_201_CREATED)
+         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PUT','DELETE'])
 @permission_classes([IsAuthenticated])
 def update_individual(request,id):
-   try:
-      crime_record = CrimeInfo.objects.get(id=id)
-   except CrimeInfo.DoesNotExist:
-      return Response({"error":"not found"})
-   if request.method == 'PUT':
-      serializer = CrimeSeralizersCreate(crime_record,data=request.data)
-      if serializer.is_valid():
-         serializer.save()
-         return Response(serializer.data,status=status.HTTP_201_CREATED)
-      return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-   if request.method == 'DELETE':
-      operation = crime_record.delete()
-      data = {}
+   group_check = request.user.groups.filter(name='police').exists()
+   if not request.user.is_staff or not group_check:
+      data = {'message':'You aren\'t allowed'}
+      return Response(data,status=status.HTTP_403_FORBIDDEN)
+   else:
+      try:
+         crime_record = CrimeInfo.objects.get(id=id)
+      except CrimeInfo.DoesNotExist:
+         return Response({"error":"not found"})
+      if request.method == 'PUT':
+         serializer = CrimeSeralizersCreate(crime_record,data=request.data)
+         if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data,status=status.HTTP_201_CREATED)
+         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+      if request.method == 'DELETE':
+         operation = crime_record.delete()
+         data = {}
 
-      if operation:
-         data['success'] = 'deleted'
-      else:
-         data['failure'] = 'failed'
+         if operation:
+            data['success'] = 'deleted'
+         else:
+            data['failure'] = 'failed'
 
-      return Response(data=data)
+         return Response(data=data)
 
 ########Crime unit###########
 
@@ -126,50 +151,68 @@ def update_individual(request,id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_medical_recoed_individual(request,ssn):
-   try:
-      user = UserProfile.objects.get(ssn_number=ssn)
-   except UserProfile.DoesNotExist:
-      return Response({"error":"not found"})
-   medical_record = MedicalInfo(ssn=ssn,user_id=user.id,first_name=user.first_name,last_name=user.last_name)
-   if request.method == 'POST':
-      serializer = MedicalSeralizers(medical_record,data=request.data)
-      if serializer.is_valid():
-         serializer.save()
-         return Response(serializer.data,status=status.HTTP_201_CREATED)
-      return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+   group_check = request.user.groups.filter(name='medical').exists()
+   if not request.user.is_staff or not group_check:
+      data = {'message':'You aren\'t allowed'}
+      return Response(data,status=status.HTTP_403_FORBIDDEN)
+   else:
+      try:
+         user = UserProfile.objects.get(ssn_number=ssn)
+      except UserProfile.DoesNotExist:
+         return Response({"error":"not found"})
+      medical_record = MedicalInfo(ssn=ssn,user_id=user.id,first_name=user.first_name,last_name=user.last_name)
+      if request.method == 'POST':
+         serializer = MedicalSeralizers(medical_record,data=request.data)
+         if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data,status=status.HTTP_201_CREATED)
+         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_medical_record_individual(request,ssn):
-   try:
-      medical = MedicalInfo.objects.filter(ssn__exact=ssn)
-   except MedicalInfo.DoesNotExist:
-      return Response({"error":"not found"})
+   group_check = request.user.groups.filter(name='medical').exists()
+   if not request.user.is_staff or not group_check:
+      data = {'message':'You aren\'t allowed'}
+      return Response(data,status=status.HTTP_403_FORBIDDEN)
+   else:
 
-   if request.method == 'GET':
-      
-      serializer = MedicalSeralizersI(medical,many=True)
-      return Response(serializer.data)
+      try:
+         medical = MedicalInfo.objects.filter(ssn__exact=ssn)
+      except MedicalInfo.DoesNotExist:
+         return Response({"error":"not found"})
+
+      if request.method == 'GET':
+         
+         serializer = MedicalSeralizersI(medical,many=True)
+         return Response(serializer.data)
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def update_medical_record(request,id):
-   try:
-      medical_record = MedicalInfo.objects.get(id=id)
-   except CrimeInfo.DoesNotExist:
-      return Response({"error":"not found"})
-   if request.method == 'PUT':
-      serializer = MedicalSeralizers(medical_record,data=request.data)
-      if serializer.is_valid():
-         serializer.save()
-         return Response(serializer.data,status=status.HTTP_201_CREATED)
-      return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+   group_check = request.user.groups.filter(name='medical').exists()
+   if not request.user.is_staff or not group_check:
+      data = {'message':'You aren\'t allowed'}
+      return Response(data,status=status.HTTP_403_FORBIDDEN)
+   else:
+      try:
+         medical_record = MedicalInfo.objects.get(id=id)
+      except CrimeInfo.DoesNotExist:
+         return Response({"error":"not found"})
+      if request.method == 'PUT':
+         serializer = MedicalSeralizers(medical_record,data=request.data)
+         if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data,status=status.HTTP_201_CREATED)
+         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 
+########visa########
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def visa_application(request,ssn):
-   if not request.user.is_staff:
+   group_check = request.user.groups.filter(name='visa').exists()
+   if not request.user.is_staff or not group_check:
       return Response({'message':'you aren\'t not allowed doing this stuff'})
    else:
       try:
