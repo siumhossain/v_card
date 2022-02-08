@@ -25,7 +25,9 @@ SECRET_KEY = 'django-insecure-65apoyw+^fxu=9&shkmc)4fq9=raq*g88i&lv#vxoj9-$g^i8s
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = [
+#     '127.0.0.1:8000'
+# ]
 
 
 # Application definition
@@ -42,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'djoser',
     'rest_framework.authtoken',
+    'admin_honeypot',
 ]
 
 MIDDLEWARE = [
@@ -59,7 +62,7 @@ ROOT_URLCONF = 'v_card.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -145,3 +148,11 @@ DJOSER = {
     'user': 'core.serializers.RegisterSerializer',
     'current_user': 'core.serializers.UserSerializers',
 }
+
+#it's just for test purpose.for testing it doesn't matter store info in env variable
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'thtest162@gmail.com'
+EMAIL_HOST_PASSWORD = '181002033'

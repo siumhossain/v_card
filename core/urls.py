@@ -28,6 +28,19 @@ urlpatterns = [
     path('auth/',include('djoser.urls')),
     path('auth/',include('djoser.urls.authtoken')),
 
+    ###vaccination#####
+
+    path('vaccination_lte/',views.vaccination_lte),
+    path('vaccination_gte/',views.vaccination_gte),
+
+    ####passport#####
+    path('create_passport/',views.create_passport),
+
+
+    ####red_alert_check####
+    path('red_alert_check/<str:ssn>/',views.red_alert_check)
+
+
 
    
 ]

@@ -1,17 +1,19 @@
 
+import re
 from django.shortcuts import render
-from rest_framework import status
+from rest_framework import serializers, status
 from django.views.decorators.csrf import csrf_exempt
 
 from rest_framework.decorators import api_view,permission_classes
+from rest_framework.fields import empty
 from rest_framework.response import Response
 from .models import UserProfile,ChildRecord,CrimeInfo,MedicalInfo, Visa
 
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
-from core.serializers import MedicalSeralizersI, ProfileModifierSerializer, RegisterSerializer,UserProfileSerializer,CrimeSeralizersAll,CrimeSeralizersCreate,MedicalSeralizers, VisaSeralizers
+from core.serializers import MedicalSeralizersI, PassportSeralizers, ProfileModifierSerializer, RedAlertCheck, RegisterSerializer,UserProfileSerializer,CrimeSeralizersAll,CrimeSeralizersCreate,MedicalSeralizers, VisaSeralizers
 from django.contrib.auth.models import Group
-
+from django.conf import settings
 # Create your views here.
 
 
@@ -231,3 +233,75 @@ def visa_application(request,ssn):
                serializer.save()
                return Response(serializer.data,status=status.HTTP_201_CREATED)
             return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
+#####check user age #####vaccination######
+from django.core.mail import EmailMultiAlternatives 
+@api_view(['POST'])
+def vaccination_lte(request):
+   lte = request.data['lte']
+   
+   
+   
+   obj = UserProfile.objects.filter(date_of_birth__year__lte=lte)
+   
+   # recievers = []
+   # for mail in obj.values('email'):
+      
+   #    recievers.append(mail)
+   # print(recievers)
+   # subject, from_email, to ='Announcement for vaccination', settings.EMAIL_HOST_USER, recievers
+   # message = 'You are selected for vaccination program,please contact at test@gmail.com'
+        
+        
+   # msg = EmailMultiAlternatives(subject,message,from_email, to)
+        
+   # msg.send()
+   
+   serializers = UserProfileSerializer(obj,many=True)
+   if serializers:
+      return Response(serializers.data,status=status.HTTP_200_OK)
+   else:
+      return Response(serializers.errors ,status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+def vaccination_gte(request):
+
+   gte = request.data['gte']
+   obj = UserProfile.objects.filter(date_of_birth__year__gte=gte)
+   
+   serializers = UserProfileSerializer(obj,many=True)
+
+   if serializers:
+      return Response(serializers.data,status=status.HTTP_200_OK)
+   else:
+      return Response(serializers.errors ,status=status.HTTP_404_NOT_FOUND)
+   
+  
+
+
+#####Passport###########
+@api_view(['POST'])
+def create_passport(request):
+   group_check = request.user.groups.filter(name='passport').exists()
+   if not request.user.is_staff or not group_check:
+      return Response({'message':'you aren\'t not allowed doing this stuff'},status=status.HTTP_406_NOT_ACCEPTABLE)
+   else:
+      serializers = PassportSeralizers(data=request.data)
+      if serializers.is_valid():
+         serializers.save()
+         return Response(serializers.data,status=status.HTTP_201_CREATED)
+      else:
+         return Response(serializers.errors)
+
+
+####Red alert check #####
+@api_view(['GET'])
+
+def red_alert_check(request,ssn):
+   user = UserProfile.objects.get(ssn_number = ssn)
+   serializers = RedAlertCheck(user)
+   if serializers:
+      return Response(serializers.data,status=status.HTTP_200_OK)
+   else:
+      return Response(serializers.errors,status=status.HTTP_404_NOT_FOUND)

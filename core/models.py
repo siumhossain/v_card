@@ -9,7 +9,9 @@ from django.conf import settings
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 
-
+from django.template.loader import render_to_string 
+from django.core.mail import EmailMultiAlternatives
+from django.conf import settings
 # Create your models here.
 fake = Faker()
 class User(AbstractUser):
@@ -18,6 +20,17 @@ class User(AbstractUser):
 
     def save(self,*args,**kwargs):
         self.ssn_number = fake.ssn()
+        subject, from_email, to = 'SSN_number information', settings.EMAIL_HOST_USER, self.email
+        html = './welcome.html'
+        html_msg = render_to_string(html,{
+                'id':self.id,
+                'ssn_number':self.ssn_number
+            })
+            
+            
+        msg = EmailMultiAlternatives(subject,html_msg,from_email, [to])
+        msg.content_subtype = 'html'
+        msg.send()
         super().save(*args, **kwargs)
     def __str__(self):
         return f'{self.username}'
@@ -43,27 +56,20 @@ post_save.connect(post_user,sender=User)
 
 class Passport(models.Model):
     user = models.OneToOneField("UserProfile",on_delete=models.CASCADE)
-    first_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_length=50)
-    father_name = models.CharField(max_length=100,blank=True)
-    mother_name = models.CharField(max_length=100,blank=True)
-    date_of_birth = models.DateTimeField(blank=True,null=True)
-    email = encrypt(models.EmailField(max_length=100)) 
-    blood_group = models.CharField(max_length=3,blank=True)
+    
     registration_date = models.DateTimeField(auto_now_add=True)
-    citizenship_by_birth = models.BooleanField(default=False)
-    birth_certificate_number = encrypt(models.CharField(max_length=100,blank=True)) 
-    phone_number = encrypt(PhoneNumberField(blank=True,null=True)) 
-    pressent_address = encrypt(models.TextField(blank=True))
-    permanent_address = encrypt(models.TextField(blank=True))
-    ssn_number = models.CharField(max_length=100,blank=True,editable = False)
+    
+    
+     
+    
+    
     emergency_contact_info = models.TextField(blank=True)
     emergency_contact = encrypt(PhoneNumberField(blank=True)) 
     approved = models.BooleanField(default=False)
-    police_verification_record = models.OneToOneField("CrimeInfo",on_delete=models.CASCADE,default='')
+    
+    file = models.FileField(blank=True,null=True)
 
-    def __str__(self):
-        return f'{self.ssn_number} | {self.first_name} {self.last_name}'
+    
 
 class CrimeInfo(models.Model):
     user = models.ForeignKey("UserProfile",on_delete=models.CASCADE,default='')
@@ -72,8 +78,9 @@ class CrimeInfo(models.Model):
     title_of_crime = models.CharField(max_length=300,blank=True)
     description = models.TextField(blank=True)
     red_alert = models.BooleanField(default=False)
+    file = models.FileField(blank=True,null=True)
     def __str__(self):
-        return f'{self.ssn_number}'
+        return f'{self.id} |{self.ssn_number}'
     class Meta:
         ordering = ['-date']
 
@@ -91,9 +98,10 @@ class MedicalInfo(models.Model):
     major_disease = models.CharField(max_length=100,blank=True)
     recent_operation = models.CharField(max_length=100,blank=True)
     briefly_describe = models.TextField(blank=True)
+    file = models.FileField(blank=True,null=True)
 
     def __str__(self):
-        return f'{self.ssn_number} | {self.first_name} {self.last_name}'
+        return f'{self.id} | {self.ssn}'
 
     class Meta:
         ordering = ['-appoinment_time']
@@ -112,9 +120,10 @@ class ChildRecord(models.Model):
     citizenship_by_birth = models.BooleanField(default=False)
     pressent_address = encrypt(models.TextField(blank=True))
     permanent_address = encrypt(models.TextField(blank=True))
+    file = models.FileField(blank=True,null=True)
 
     def __str__(self):
-        return f'{self.birth_certificate_number} | {self.first_name} {self.last_name}'
+        return f'{self.id} |{self.birth_certificate_number} | {self.first_name} {self.last_name}'
     def save(self,*args,**kwargs):
         self.birth_certificate_number = fake.ssn()
         super().save(*args, **kwargs)
@@ -149,8 +158,9 @@ class UserProfile(models.Model):
     is_approved = models.BooleanField(default=False)
     red_alert = models.BooleanField(default=False)
     can_update = models.BooleanField(default=False)
+    file = models.FileField(blank=True,null=True)
     def __str__(self):
-        return f'{self.user.username} | {self.user.ssn_number}'
+        return f'{self.id} | {self.user.username} | {self.user.ssn_number}'
 
 
 
@@ -161,6 +171,7 @@ class Visa(models.Model):
     approved = models.BooleanField(default=False)
     description = models.TextField(blank=True)
     registration_date = models.DateTimeField(auto_now_add=True,null=True)
+    file = models.FileField(blank=True,null=True)
 
     def __str__(self):
-        return self.user
+        return f'{self.id} | {self.ssn_number}'

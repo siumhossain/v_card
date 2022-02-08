@@ -1,6 +1,7 @@
+from django.db.models import fields
 from rest_framework import serializers
 
-from . models import CrimeInfo, User,UserProfile,ChildRecord,MedicalInfo, Visa
+from . models import CrimeInfo, Passport, User,UserProfile,ChildRecord,MedicalInfo, Visa
 
 
 
@@ -84,3 +85,20 @@ class VisaSeralizers(serializers.ModelSerializer):
     class Meta:
         model = Visa
         fields = ['approved','description']
+
+
+class PassportSeralizers(serializers.ModelSerializer):
+    class Meta:
+        model = Passport
+        fields = [
+            'user',
+            'emergency_contact_info',
+            'emergency_contact',
+            'file'
+        ]
+
+
+class RedAlertCheck(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['red_alert']

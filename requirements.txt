@@ -8,6 +8,7 @@ coreschema==0.0.4
 cryptography==3.4.7
 defusedxml==0.7.1
 Django==3.2.6
+django-admin-honeypot==1.1.0
 django-appconf==1.0.4
 django-cryptography==1.0
 django-phonenumber-field==5.2.0

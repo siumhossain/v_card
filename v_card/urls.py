@@ -19,7 +19,8 @@ from django.urls import path,include
 
 app_name = 'core'
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('secret/', admin.site.urls),
+    path('admin/',include('admin_honeypot.urls')),
     path('api/',include('core.urls')),
     
 ]
